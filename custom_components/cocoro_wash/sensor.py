@@ -148,7 +148,7 @@ class CocoroWashSensor(CocoroWashEntity, SensorEntity):
 
 
 class CocoroWashCompletionTimeSensor(CocoroWashEntity, SensorEntity):
-    """Estimated time at which the running cycle ends."""
+    """Estimated time at which the running cycle ends; unknown while paused."""
 
     _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_translation_key = "completion_time"

@@ -16,6 +16,7 @@ from enum import StrEnum
 EPC_FAULT = "0x88"
 EPC_ON_TIMER = "0x90"
 EPC_DOOR = "0xB0"
+EPC_RUN_SETTING = "0xB2"
 EPC_CYCLE = "0xD0"
 EPC_STAGE = "0xE2"
 EPC_REMAINING_TIME = "0xED"
@@ -29,6 +30,7 @@ STATE_EPCS: tuple[str, ...] = (
     EPC_FAULT,
     EPC_ON_TIMER,
     EPC_DOOR,
+    EPC_RUN_SETTING,
     EPC_CYCLE,
     EPC_STAGE,
     EPC_REMAINING_TIME,
@@ -48,9 +50,11 @@ class DriveType(StrEnum):
 
 
 class OperationState(StrEnum):
-    """Overall state, as the COCORO WASH app derives it."""
+    """Overall state, as the COCORO WASH app derives it, plus "paused"."""
 
     RUNNING = "running"
+    #: A cycle is in progress but the washer was paused; the app does not show this.
+    PAUSED = "paused"
     STANDBY = "standby"
     STOPPED = "stopped"
 
@@ -63,6 +67,10 @@ class Stage(StrEnum):
     SPINNING = "spinning"
     DRYING = "drying"
     WRINKLE_MINIMIZING = "wrinkle_minimizing"
+    #: Before drying starts the washer works out how long it will take.
+    CALCULATING_DRYING_TIME = "calculating_drying_time"
+    #: During drying the washer revises its estimate; the countdown holds.
+    ADJUSTING_DRYING_TIME = "adjusting_drying_time"
     SUSPENDED = "suspended"
     FINISHED = "finished"
     STANDBY = "standby"
@@ -103,11 +111,17 @@ _STAGES: dict[int, Stage] = {
     0xE0: Stage.RUNNING,
     0xE1: Stage.RUNNING,
     0xE2: Stage.STANDBY,
-    0xE5: Stage.RUNNING,
+    0xE4: Stage.CALCULATING_DRYING_TIME,
+    0xE5: Stage.ADJUSTING_DRYING_TIME,
     0xE6: Stage.RUNNING,
 }
-_RUNNING_STAGE_CODES = frozenset({0x41, 0x42, 0x43, 0x52, 0xE0, 0xE1, 0xE5, 0xE6})
+# The app counts 0xE4 as stopped, yet labels it "calculating drying time" and
+# the washer always goes on to dry from it, so it is treated as running here.
+_RUNNING_STAGE_CODES = frozenset({0x41, 0x42, 0x43, 0x52, 0xE0, 0xE1, 0xE4, 0xE5, 0xE6})
 _STANDBY_STAGE_CODES = frozenset({0x61, 0xE2})
+_FINISHED_STAGES = frozenset({Stage.FINISHED, Stage.WRINKLE_MINIMIZING})
+#: Run setting (0xB2) of a washer that was paused mid-cycle.
+_RUN_SETTING_PAUSED = 0x42
 #: Stage 0xEF means "running" only for this course id.
 _STAGE_EF = 0xEF
 _STAGE_EF_RUNNING_COURSE = 63
@@ -215,13 +229,16 @@ class WasherState:
     drive_type: DriveType | None
 
     @property
+    def cycle_active(self) -> bool:
+        """Return whether a cycle is in progress, running or paused."""
+        return self.operation_state in (OperationState.RUNNING, OperationState.PAUSED)
+
+    @property
     def progress(self) -> int | None:
-        """Return the percentage of the running cycle that has elapsed."""
-        if (
-            self.operation_state is not OperationState.RUNNING
-            or self.remaining_minutes is None
-            or not self.total_minutes
-        ):
+        """Return the percentage of the cycle that has elapsed; 100 once it is done."""
+        if self.stage in _FINISHED_STAGES:
+            return 100
+        if not self.cycle_active or self.remaining_minutes is None or not self.total_minutes:
             return None
         elapsed = self.total_minutes - self.remaining_minutes
         return max(0, min(100, round(elapsed * 100 / self.total_minutes)))
@@ -240,9 +257,17 @@ def decode(properties: Mapping[str, str]) -> WasherState:
     fault = _flag(properties.get(EPC_FAULT))
 
     return WasherState(
-        operation_state=_operation_state(stage_code, course_id, fault),
+        operation_state=_operation_state(
+            stage_code,
+            course_id,
+            fault,
+            run_setting=_byte(_edt(properties.get(EPC_RUN_SETTING)), 0),
+        ),
         stage=_stage(stage_code, course_id),
-        course=_course(
+        # In standby the run info is all zeros, which would read as course 0.
+        course=None
+        if stage_code in _STANDBY_STAGE_CODES
+        else _course(
             course_id,
             drive_type,
             generation=_byte(capabilities, 4),
@@ -296,7 +321,11 @@ def _drive_type(code: int | None) -> DriveType | None:
 
 
 def _operation_state(
-    stage_code: int | None, course_id: int | None, fault: bool | None
+    stage_code: int | None,
+    course_id: int | None,
+    fault: bool | None,
+    *,
+    run_setting: int | None,
 ) -> OperationState | None:
     if stage_code is None:
         return None
@@ -304,9 +333,12 @@ def _operation_state(
         return OperationState.STANDBY
     if stage_code in _STANDBY_STAGE_CODES:
         return OperationState.STANDBY
-    if stage_code in _RUNNING_STAGE_CODES:
-        return OperationState.RUNNING
-    if stage_code == _STAGE_EF and course_id == _STAGE_EF_RUNNING_COURSE:
+    if stage_code in _RUNNING_STAGE_CODES or (
+        stage_code == _STAGE_EF and course_id == _STAGE_EF_RUNNING_COURSE
+    ):
+        # A pause leaves the stage as it was; only the run setting changes.
+        if run_setting == _RUN_SETTING_PAUSED:
+            return OperationState.PAUSED
         return OperationState.RUNNING
     return OperationState.STOPPED
 

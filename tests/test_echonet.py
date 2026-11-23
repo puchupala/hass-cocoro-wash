@@ -83,15 +83,19 @@ def test_decode_ignores_malformed_values() -> None:
         ("0x42", OperationState.RUNNING, Stage.RINSING),
         ("0x43", OperationState.RUNNING, Stage.SPINNING),
         ("0x52", OperationState.RUNNING, Stage.DRYING),
-        ("0xE5", OperationState.RUNNING, Stage.RUNNING),
+        ("0xE0", OperationState.RUNNING, Stage.RUNNING),
+        # The app counts 0xE4 as stopped, but the washer is working out the
+        # drying time and goes on to dry.
+        ("0xE4", OperationState.RUNNING, Stage.CALCULATING_DRYING_TIME),
+        # Seen for nine minutes in the middle of drying on the real washer.
+        ("0xE5", OperationState.RUNNING, Stage.ADJUSTING_DRYING_TIME),
         ("0x61", OperationState.STANDBY, Stage.STANDBY),
         ("0xE2", OperationState.STANDBY, Stage.STANDBY),
         ("0x45", OperationState.STOPPED, Stage.FINISHED),
         ("0x51", OperationState.STOPPED, Stage.FINISHED),
         ("0x53", OperationState.STOPPED, Stage.WRINKLE_MINIMIZING),
         ("0x44", OperationState.STOPPED, Stage.SUSPENDED),
-        # Seen on the real washer between cycles; the app shows it as stopped.
-        ("0xE4", OperationState.STOPPED, None),
+        ("0xEE", OperationState.STOPPED, None),
     ],
 )
 def test_stage_and_operation_state(
@@ -122,10 +126,69 @@ def test_remaining_time_unknown_marker() -> None:
     assert state.progress is None
 
 
-def test_progress_only_while_running() -> None:
-    assert decode(_with(E2="0x45", ED="0x0000")).progress is None
+def test_paused_washer_keeps_its_stage() -> None:
+    # Read from the real washer while it was paused during the spin.
+    state = decode(_with(E2="0x43", B2="0x42", ED="0x0118", F4=_f4(14, 102)))
+
+    assert state.operation_state is OperationState.PAUSED
+    assert state.stage is Stage.SPINNING
+    assert state.cycle_active is True
+    assert state.remaining_minutes == 84
+    assert state.progress == 18
+
+
+@pytest.mark.parametrize("run_setting", ["0x41", "0x43", "bogus"])
+def test_run_setting_other_than_paused_is_running(run_setting: str) -> None:
+    assert decode(_with(B2=run_setting)).operation_state is OperationState.RUNNING
+
+
+def test_washer_without_run_setting_is_running() -> None:
+    properties = _with()
+    del properties["0xB2"]
+
+    assert decode(properties).operation_state is OperationState.RUNNING
+
+
+@pytest.mark.parametrize(
+    ("stage_code", "operation_state"),
+    [
+        ("0x54", OperationState.STOPPED),
+        ("0x53", OperationState.STOPPED),
+        ("0x61", OperationState.STANDBY),
+    ],
+)
+def test_paused_run_setting_is_ignored_outside_a_cycle(
+    stage_code: str, operation_state: OperationState
+) -> None:
+    state = decode(_with(E2=stage_code, B2="0x42"))
+
+    assert state.operation_state is operation_state
+    assert state.cycle_active is False
+
+
+def test_paused_course_63_cleaning() -> None:
+    state = decode(_with(E2="0xEF", F4=_f4(63), B2="0x42"))
+
+    assert state.operation_state is OperationState.PAUSED
+
+
+def test_progress() -> None:
     # A remaining time above the planned total must not go negative.
     assert decode(_with(ED="0x0300")).progress == 0
+    # Done: the washer reports no remaining time, or a stale one.
+    assert decode(_with(E2="0x45", ED="0x0000")).progress == 100
+    assert decode(_with(E2="0x54", ED="0x0002")).progress == 100
+    assert decode(_with(E2="0x53", ED="0x0000")).progress == 100
+    # Nothing to measure in standby.
+    assert decode(_with(E2="0x61", ED="0xFFFF", F4=_f4(0))).progress is None
+
+
+def test_course_is_unknown_in_standby() -> None:
+    # In standby the real washer sends all-zero run info: course id 0.
+    assert decode(_with(E2="0xE2", F4=_f4(0))).course is None
+    assert decode(_with(E2="0x61", F4=_f4(0))).course is None
+    # Once a cycle has run, the course stays readable after it ends.
+    assert decode(_with(E2="0x54", F4=_f4(14))).course == "standard"
 
 
 @pytest.mark.parametrize(

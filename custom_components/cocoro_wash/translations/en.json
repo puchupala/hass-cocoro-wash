@@ -66,6 +66,7 @@
         "name": "Operation state",
         "state": {
           "running": "Running",
+          "paused": "Paused",
           "standby": "Standby",
           "stopped": "Stopped"
         }
@@ -78,6 +79,8 @@
           "spinning": "Spinning",
           "drying": "Drying",
           "wrinkle_minimizing": "Wrinkle minimizing",
+          "calculating_drying_time": "Calculating drying time",
+          "adjusting_drying_time": "Adjusting drying time",
           "suspended": "Paused",
           "finished": "Finished",
           "standby": "Standby",

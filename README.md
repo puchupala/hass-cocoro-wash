@@ -16,15 +16,15 @@ One device per washer registered to your COCORO ID.
 
 | Entity | Type | Values |
 |---|---|---|
-| Operation state | sensor | running, standby, stopped |
-| Stage | sensor | washing, rinsing, spinning, drying, wrinkle minimizing, paused, finished, standby, running |
-| Course | sensor | the selected course, e.g. Standard (標準コース) |
+| Operation state | sensor | running, paused, standby, stopped |
+| Stage | sensor | washing, rinsing, spinning, drying, calculating drying time, adjusting drying time, wrinkle minimizing, paused, finished, standby, running |
+| Course | sensor | the course of the current or last cycle, e.g. Standard (標準コース) |
 | Cycle type | sensor | wash, dry, wash and dry |
 | Remaining time | sensor | minutes |
-| Progress | sensor | percent of the running cycle |
-| Completion time | sensor | estimated end of the running cycle |
+| Progress | sensor | percent of the cycle; 100 once it has finished |
+| Completion time | sensor | estimated end of the running cycle; unknown while paused |
 | Detergent level, Softener level | sensor (diagnostic) | OK, low, empty |
-| Running | binary sensor | on while a cycle runs |
+| Running | binary sensor | on while a cycle is in progress, including while it is paused |
 | Door | binary sensor | on when open |
 | Problem | binary sensor (diagnostic) | on when the washer reports a fault |
 | Timer reserved | binary sensor | on when a start timer is set |
@@ -79,6 +79,14 @@ seconds otherwise; both can be changed under **Configure**.
   "finished"), Connectivity turns off, and Door and Remaining time become
   unknown because they can no longer be trusted. If the washer drops out in
   the middle of a cycle, Operation state and Stage become unknown too.
+- Pausing a cycle shows as Operation state "paused". Stage keeps the stage
+  the washer was paused in, and Running stays on, so an automation on Running
+  turning off fires only when the cycle really ends.
+- The washer does not report the selected course before a cycle starts, so
+  Course is unknown in standby.
+- Between polls nothing is seen. Something that starts and ends within one
+  poll interval, such as the door being opened and closed while the washer is
+  idle, can be missed.
 - Courses downloaded through the app are reported as "Downloaded course".
 - Developed against one drum washer-dryer (ES-W114). Vertical and other models
   follow the web app's rules for them but have not been tested on hardware.
