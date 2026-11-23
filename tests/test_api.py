@@ -60,6 +60,7 @@ class FakeService:
                 web.get("/v1/cocoro-wash/devices/cocoro-home", self.devices),
                 web.get("/v1/cocoro-wash/deviceinfo", self.device_info),
                 web.get("/v1/cocoro-wash/sensors", self.sensors),
+                web.get("/v1/cocoro-wash/objects", self.objects),
             ]
         )
 
@@ -140,6 +141,21 @@ class FakeService:
             for epc, value in DRYING_PROPERTIES.items()
         ]
         return web.json_response({"sensors_021": {"status": 200, "body": {"data": data}}})
+
+    async def objects(self, request: web.Request) -> web.Response:
+        self._authorize(request)
+        assert request.query["count"] == "1"
+        assert request.query["epc"] == "0xE2+0xED+0xB0"
+        # One row per property, plus an older stray row that must lose.
+        data = [
+            {"0xE2": "0x53", "time": "2026-11-23T09:46:26+00:00"},
+            {"0xE2": "0x54", "time": "2026-11-23T09:55:46+00:00"},
+            {"0xED": "0x0002", "time": "2026-11-23T09:45:02+00:00"},
+            {"0xb0": "0x42", "time": "2026-11-23T09:56:07+00:00"},
+        ]
+        return web.json_response(
+            {"objects_020": {"status": 200, "body": {"count": 4, "data": data}}}
+        )
 
 
 @pytest.fixture
@@ -253,3 +269,13 @@ async def test_connection_error(
 
     with pytest.raises(CocoroWashConnectionError):
         await client.login()
+
+
+async def test_last_properties_come_from_history(
+    service: FakeService, session: aiohttp.ClientSession
+) -> None:
+    client = CocoroWashClient(session, EMAIL, PASSWORD)
+
+    properties = await client.get_last_properties(DEVICE_ID, ["0xE2", "0xED", "0xB0"])
+
+    assert properties == {"0xE2": "0x54", "0xED": "0x0002", "0xB0": "0x42"}

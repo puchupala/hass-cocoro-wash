@@ -67,6 +67,7 @@ async def test_entities_of_a_drying_washer(
         "sensor.laundry_detergent_level": "ok",
         "sensor.laundry_softener_level": "ok",
         "binary_sensor.laundry_running": "on",
+        "binary_sensor.laundry_connectivity": "on",
         "binary_sensor.laundry_door": "off",
         "binary_sensor.laundry_problem": "off",
         "binary_sensor.laundry_timer_reserved": "off",
@@ -153,7 +154,7 @@ async def test_completion_time_does_not_wobble(
     assert hass.states.get(entity_id).state == "2026-11-23T10:52:00+00:00"
 
 
-async def test_unreachable_washer_is_unavailable_and_recovers(
+async def test_powered_off_washer_shows_its_last_report(
     hass: HomeAssistant,
     entry: MockConfigEntry,
     mock_client: AsyncMock,
@@ -162,14 +163,41 @@ async def test_unreachable_washer_is_unavailable_and_recovers(
     mock_client.get_properties.side_effect = DeviceUnreachableError(404, "Not Found", "unreachable")
     await _poll(hass, freezer, 60)
 
-    assert hass.states.get("sensor.laundry_stage").state == STATE_UNAVAILABLE
-    assert hass.states.get("binary_sensor.laundry_door").state == STATE_UNAVAILABLE
-    # An unreachable washer is not an integration failure.
+    mock_client.get_last_properties.assert_awaited_once_with(DEVICE_ID, STATE_EPCS)
+    assert hass.states.get("binary_sensor.laundry_connectivity").state == "off"
+    assert hass.states.get("sensor.laundry_stage").state == "finished"
+    assert hass.states.get("sensor.laundry_operation_state").state == "stopped"
+    assert hass.states.get("binary_sensor.laundry_running").state == "off"
+    assert hass.states.get("sensor.laundry_course").state == "standard"
+    assert hass.states.get("sensor.laundry_detergent_level").state == "ok"
+    # These can change, or were already stale, once the washer is off.
+    assert hass.states.get("binary_sensor.laundry_door").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_remaining_time").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_completion_time").state == STATE_UNKNOWN
     assert entry.runtime_data.last_update_success is True
+    assert entry.runtime_data.update_interval == timedelta(seconds=300)
 
     mock_client.get_properties.side_effect = None
     await _poll(hass, freezer, 300)
+    assert hass.states.get("binary_sensor.laundry_connectivity").state == "on"
     assert hass.states.get("sensor.laundry_stage").state == "drying"
+    assert hass.states.get("binary_sensor.laundry_door").state == "off"
+
+
+async def test_washer_lost_mid_cycle_is_unknown_rather_than_running(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    mock_client.get_properties.side_effect = DeviceUnreachableError(404, "Not Found", "unreachable")
+    mock_client.get_last_properties.return_value = dict(DRYING_PROPERTIES)
+    await _poll(hass, freezer, 60)
+
+    assert hass.states.get("sensor.laundry_operation_state").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_stage").state == STATE_UNKNOWN
+    assert hass.states.get("binary_sensor.laundry_running").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_course").state == "standard"
 
 
 async def test_service_outage_marks_entities_unavailable(
@@ -235,6 +263,7 @@ async def test_diagnostics_leave_out_identifying_data(
         assert secret not in text
     washer = diagnostics["washers"][0]
     assert washer["model"] == "ES-W114"
+    assert washer["reachable"] is True
     assert washer["properties"] == DRYING_PROPERTIES
     assert washer["state"]["stage"] == "drying"
     assert diagnostics["update_interval_seconds"] == 60

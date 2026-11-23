@@ -10,7 +10,7 @@ import pytest
 from custom_components.cocoro_wash.api import Device, DeviceInfo
 from custom_components.cocoro_wash.echonet import STATE_EPCS
 
-from . import DEVICE_ID, DRYING_PROPERTIES
+from . import DEVICE_ID, DRYING_PROPERTIES, LAST_REPORT_PROPERTIES
 
 
 @pytest.fixture(autouse=True)
@@ -36,4 +36,5 @@ def mock_client() -> Generator[AsyncMock]:
             readable_epcs=frozenset(STATE_EPCS),
         )
         client.get_properties.return_value = dict(DRYING_PROPERTIES)
+        client.get_last_properties.return_value = dict(LAST_REPORT_PROPERTIES)
         yield client

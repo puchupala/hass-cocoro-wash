@@ -241,6 +241,33 @@ class CocoroWashClient:
                     properties[_normalize_epc(key)] = value
         return properties
 
+    async def get_last_properties(self, device_id: str, epcs: Iterable[str]) -> dict[str, str]:
+        """Return the values the washer last reported to the cloud.
+
+        This reads the cloud's history, so it also works while the washer is
+        powered off. Values the washer only reports periodically can be several
+        minutes older than its real state at the time it went offline.
+        """
+        body = await self._get(
+            "objects",
+            {
+                "device_id": device_id,
+                "event_key": EVENT_ECHONET_PROPERTY,
+                "epc": "+".join(epcs),
+                "count": "1",
+            },
+        )
+        newest: dict[str, tuple[str, str]] = {}
+        for row in body.get("data", []):
+            time = row.get("time") or ""
+            for key, value in row.items():
+                epc = _normalize_epc(key)
+                if key == "time" or not isinstance(value, str):
+                    continue
+                if epc not in newest or time > newest[epc][0]:
+                    newest[epc] = (time, value)
+        return {epc: value for epc, (_, value) in newest.items()}
+
     async def _get(self, path: str, params: Mapping[str, str] | None = None) -> dict[str, Any]:
         if not self._logged_in:
             await self.login()

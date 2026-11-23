@@ -14,4 +14,8 @@ DRYING_PROPERTIES: dict[str, str] = {
     "0xFC": "0x0207E5",
 }
 
+# What the cloud kept as that washer's last report after the cycle ended and
+# it powered itself off: finished, with a remaining time from minutes earlier.
+LAST_REPORT_PROPERTIES: dict[str, str] = {**DRYING_PROPERTIES, "0xE2": "0x54", "0xED": "0x0002"}
+
 DEVICE_ID = "a" * 64

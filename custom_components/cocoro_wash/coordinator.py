@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import logging
 from dataclasses import dataclass
 from datetime import timedelta
@@ -44,10 +45,28 @@ class Washer:
 
 @dataclass(frozen=True, slots=True)
 class WasherData:
-    """Latest reading of a washer; ``state`` is None while it is unreachable."""
+    """Latest reading of a washer.
 
-    state: WasherState | None
+    While the washer does not answer (it powers itself off after a cycle),
+    ``reachable`` is False and the state comes from the values it last
+    reported to the cloud.
+    """
+
+    state: WasherState
     properties: dict[str, str]
+    reachable: bool
+
+
+def _last_known(state: WasherState) -> WasherState:
+    """Keep only what still holds for a washer that stopped answering.
+
+    The door can be opened and the remaining time goes stale while it is off.
+    If it dropped out mid-cycle, whether it is still running is unknown.
+    """
+    changes: dict[str, None] = {"door_open": None, "remaining_minutes": None}
+    if state.operation_state is OperationState.RUNNING:
+        changes |= {"operation_state": None, "stage": None}
+    return dataclasses.replace(state, **changes)
 
 
 class CocoroWashCoordinator(DataUpdateCoordinator[dict[str, WasherData]]):
@@ -96,18 +115,20 @@ class CocoroWashCoordinator(DataUpdateCoordinator[dict[str, WasherData]]):
                 try:
                     properties = await self.client.get_properties(device_id, washer.epcs)
                 except DeviceUnreachableError:
-                    _LOGGER.debug("Washer %s is unreachable", washer.info.model)
-                    data[device_id] = WasherData(None, {})
+                    _LOGGER.debug("Washer %s is unreachable; using its last report", device_id[:8])
+                    properties = await self.client.get_last_properties(device_id, washer.epcs)
+                    data[device_id] = WasherData(
+                        _last_known(decode(properties)), properties, reachable=False
+                    )
                     continue
-                data[device_id] = WasherData(decode(properties), properties)
+                data[device_id] = WasherData(decode(properties), properties, reachable=True)
         except InvalidCredentialsError as err:
             raise ConfigEntryAuthFailed(str(err)) from err
         except CocoroWashError as err:
             raise UpdateFailed(str(err)) from err
 
         running = any(
-            reading.state is not None and reading.state.operation_state is OperationState.RUNNING
-            for reading in data.values()
+            reading.state.operation_state is OperationState.RUNNING for reading in data.values()
         )
         self.update_interval = self._interval_running if running else self._interval_idle
         return data

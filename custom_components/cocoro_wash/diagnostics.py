@@ -28,8 +28,9 @@ async def async_get_config_entry_diagnostics(
                 "model": washer.info.model,
                 "readable_epcs": sorted(washer.info.readable_epcs),
                 "polled_epcs": list(washer.epcs),
+                "reachable": reading.reachable if reading else None,
                 "properties": reading.properties if reading else None,
-                "state": asdict(reading.state) if reading and reading.state else None,
+                "state": asdict(reading.state) if reading else None,
             }
         )
     return {

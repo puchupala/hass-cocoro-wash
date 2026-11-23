@@ -28,6 +28,7 @@ One device per washer registered to your COCORO ID.
 | Door | binary sensor | on when open |
 | Problem | binary sensor (diagnostic) | on when the washer reports a fault |
 | Timer reserved | binary sensor | on when a start timer is set |
+| Connectivity | binary sensor (diagnostic) | on while the washer answers |
 
 Entities for properties a washer does not report are not created. State names
 are translated to English and Japanese.
@@ -58,7 +59,11 @@ seconds otherwise; both can be changed under **Configure**.
   non-browser clients with a security challenge, so the integration sends a
   browser-style `User-Agent`. If Sharp adds a CAPTCHA or a second factor to
   the login, the integration can no longer sign in.
-- A washer that is powered off or offline shows its entities as unavailable.
+- A washer powers itself off after a cycle and then stops answering. The
+  entities keep showing what it last reported to the cloud (typically
+  "finished"), Connectivity turns off, and Door and Remaining time become
+  unknown because they can no longer be trusted. If the washer drops out in
+  the middle of a cycle, Operation state and Stage become unknown too.
 - Courses downloaded through the app are reported as "Downloaded course".
 - Developed against one drum washer-dryer (ES-W114). Vertical and other models
   follow the web app's rules for them but have not been tested on hardware.

@@ -85,8 +85,8 @@ async def main() -> int:
             try:
                 properties = await client.get_properties(device.device_id, epcs)
             except DeviceUnreachableError as err:
-                print(f"    unreachable: {err}")
-                continue
+                print(f"    unreachable ({err}); showing its last report to the cloud")
+                properties = await client.get_last_properties(device.device_id, epcs)
             if args.raw:
                 for epc in sorted(properties):
                     print(f"    {epc} = {properties[epc]}")

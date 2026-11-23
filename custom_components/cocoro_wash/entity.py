@@ -6,7 +6,7 @@ from homeassistant.helpers.device_registry import CONNECTION_NETWORK_MAC, Device
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, MANUFACTURER
-from .coordinator import CocoroWashCoordinator
+from .coordinator import CocoroWashCoordinator, WasherData
 from .echonet import WasherState
 
 
@@ -31,12 +31,17 @@ class CocoroWashEntity(CoordinatorEntity[CocoroWashCoordinator]):
         )
 
     @property
+    def reading(self) -> WasherData | None:
+        """Return the latest reading of this entity's washer."""
+        return self.coordinator.data.get(self._device_id)
+
+    @property
     def washer_state(self) -> WasherState | None:
-        """Return the latest decoded state, or None while the washer is unreachable."""
-        reading = self.coordinator.data.get(self._device_id)
+        """Return the latest decoded state of this entity's washer."""
+        reading = self.reading
         return reading.state if reading else None
 
     @property
     def available(self) -> bool:
-        """Return whether the washer answered the last poll."""
-        return super().available and self.washer_state is not None
+        """Return whether the service returned data for this washer."""
+        return super().available and self.reading is not None

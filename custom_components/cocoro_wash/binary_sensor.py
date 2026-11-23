@@ -72,12 +72,15 @@ async def async_setup_entry(
 ) -> None:
     """Set up the binary sensors of every washer on the account."""
     coordinator = entry.runtime_data
-    async_add_entities(
-        CocoroWashBinarySensor(coordinator, device_id, description)
-        for device_id, washer in coordinator.washers.items()
-        for description in BINARY_SENSORS
-        if description.required_epc is None or description.required_epc in washer.epcs
-    )
+    entities: list[BinarySensorEntity] = []
+    for device_id, washer in coordinator.washers.items():
+        entities.extend(
+            CocoroWashBinarySensor(coordinator, device_id, description)
+            for description in BINARY_SENSORS
+            if description.required_epc is None or description.required_epc in washer.epcs
+        )
+        entities.append(CocoroWashConnectivitySensor(coordinator, device_id))
+    async_add_entities(entities)
 
 
 class CocoroWashBinarySensor(CocoroWashEntity, BinarySensorEntity):
@@ -100,3 +103,24 @@ class CocoroWashBinarySensor(CocoroWashEntity, BinarySensorEntity):
         """Return whether the sensor is on."""
         state = self.washer_state
         return self.entity_description.value_fn(state) if state else None
+
+
+class CocoroWashConnectivitySensor(CocoroWashEntity, BinarySensorEntity):
+    """Whether the washer answered the last poll.
+
+    A washer powers itself off after a cycle; the other entities then show
+    what it last reported.
+    """
+
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, coordinator: CocoroWashCoordinator, device_id: str) -> None:
+        """Initialize the binary sensor."""
+        super().__init__(coordinator, device_id, "connectivity")
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return whether the washer is reachable."""
+        reading = self.reading
+        return reading.reachable if reading else None
