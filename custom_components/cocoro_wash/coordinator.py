@@ -27,7 +27,7 @@ from .const import (
     DEFAULT_SCAN_INTERVAL_RUNNING,
     DOMAIN,
 )
-from .echonet import STATE_EPCS, OperationState, WasherState, decode
+from .echonet import STATE_EPCS, WasherState, decode
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,16 +61,18 @@ def _last_known(state: WasherState) -> WasherState:
     """Keep only what still holds for a washer that stopped answering.
 
     The door can be opened and the remaining time goes stale while it is off.
-    If it dropped out mid-cycle, whether it is still running is unknown.
+    If it dropped out mid-cycle, whether it is still running is unknown. The
+    cloud also stores the run setting only every 15 minutes, so "paused" in a
+    last report cannot be trusted either.
     """
     changes: dict[str, None] = {"door_open": None, "remaining_minutes": None}
-    if state.operation_state is OperationState.RUNNING:
+    if state.cycle_active:
         changes |= {"operation_state": None, "stage": None}
     return dataclasses.replace(state, **changes)
 
 
 class CocoroWashCoordinator(DataUpdateCoordinator[dict[str, WasherData]]):
-    """Poll every washer on the account, faster while one is running."""
+    """Poll every washer on the account, faster while a cycle is in progress."""
 
     config_entry: CocoroWashConfigEntry
 
@@ -127,8 +129,7 @@ class CocoroWashCoordinator(DataUpdateCoordinator[dict[str, WasherData]]):
         except CocoroWashError as err:
             raise UpdateFailed(str(err)) from err
 
-        running = any(
-            reading.state.operation_state is OperationState.RUNNING for reading in data.values()
-        )
-        self.update_interval = self._interval_running if running else self._interval_idle
+        # A paused washer keeps the fast interval so a resume shows promptly.
+        active = any(reading.state.cycle_active for reading in data.values())
+        self.update_interval = self._interval_running if active else self._interval_idle
         return data

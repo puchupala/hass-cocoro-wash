@@ -12,6 +12,7 @@
       "operation_state": {
         "default": "mdi:washing-machine",
         "state": {
+          "paused": "mdi:pause-circle-outline",
           "stopped": "mdi:washing-machine-off"
         }
       },

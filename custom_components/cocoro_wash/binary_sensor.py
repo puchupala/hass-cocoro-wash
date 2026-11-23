@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .coordinator import CocoroWashConfigEntry, CocoroWashCoordinator
-from .echonet import EPC_DOOR, EPC_FAULT, EPC_ON_TIMER, OperationState, WasherState
+from .echonet import EPC_DOOR, EPC_FAULT, EPC_ON_TIMER, WasherState
 from .entity import CocoroWashEntity
 
 PARALLEL_UPDATES = 0
@@ -31,9 +31,10 @@ class CocoroWashBinarySensorDescription(BinarySensorEntityDescription):
 
 
 def _is_running(state: WasherState) -> bool | None:
+    """Return whether a cycle is in progress; a paused cycle still counts."""
     if state.operation_state is None:
         return None
-    return state.operation_state is OperationState.RUNNING
+    return state.cycle_active
 
 
 BINARY_SENSORS: tuple[CocoroWashBinarySensorDescription, ...] = (

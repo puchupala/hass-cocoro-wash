@@ -30,6 +30,7 @@ from custom_components.cocoro_wash.echonet import STATE_EPCS
 from . import DEVICE_ID, DRYING_PROPERTIES
 
 FINISHED_PROPERTIES = {**DRYING_PROPERTIES, "0xE2": "0x51", "0xED": "0x0000"}
+PAUSED_PROPERTIES = {**DRYING_PROPERTIES, "0xB2": "0x42"}
 
 
 @pytest.fixture
@@ -123,7 +124,7 @@ async def test_polls_faster_while_running(
     assert hass.states.get("sensor.laundry_operation_state").state == "stopped"
     assert hass.states.get("sensor.laundry_stage").state == "finished"
     assert hass.states.get("sensor.laundry_completion_time").state == STATE_UNKNOWN
-    assert hass.states.get("sensor.laundry_progress").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_progress").state == "100"
     assert hass.states.get("binary_sensor.laundry_running").state == "off"
     assert coordinator.update_interval == timedelta(seconds=300)
 
@@ -132,6 +133,50 @@ async def test_polls_faster_while_running(
     assert mock_client.get_properties.await_count == calls
     await _poll(hass, freezer, 240)
     assert mock_client.get_properties.await_count == calls + 1
+
+
+@pytest.mark.freeze_time("2026-11-23 09:00:00+00:00")
+async def test_paused_cycle(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    mock_client.get_properties.return_value = PAUSED_PROPERTIES
+    await _poll(hass, freezer, 60)
+
+    assert hass.states.get("sensor.laundry_operation_state").state == "paused"
+    assert hass.states.get("sensor.laundry_stage").state == "drying"
+    # The cycle is still in progress: Running stays on and the countdown is kept,
+    # but when it ends cannot be estimated until it resumes.
+    assert hass.states.get("binary_sensor.laundry_running").state == "on"
+    assert hass.states.get("sensor.laundry_remaining_time").state == "100"
+    assert hass.states.get("sensor.laundry_progress").state == "24"
+    assert hass.states.get("sensor.laundry_completion_time").state == STATE_UNKNOWN
+    # Keep polling fast so the resume shows promptly.
+    assert entry.runtime_data.update_interval == timedelta(seconds=60)
+
+    # Resumed ten minutes later: the end time moves by the length of the pause.
+    mock_client.get_properties.return_value = dict(DRYING_PROPERTIES)
+    await _poll(hass, freezer, 540)
+    assert hass.states.get("sensor.laundry_operation_state").state == "running"
+    assert hass.states.get("sensor.laundry_completion_time").state == "2026-11-23T10:50:00+00:00"
+
+
+async def test_washer_lost_while_paused_is_unknown(
+    hass: HomeAssistant,
+    entry: MockConfigEntry,
+    mock_client: AsyncMock,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    mock_client.get_properties.side_effect = DeviceUnreachableError(404, "Not Found", "unreachable")
+    mock_client.get_last_properties.return_value = dict(PAUSED_PROPERTIES)
+    await _poll(hass, freezer, 60)
+
+    assert hass.states.get("sensor.laundry_operation_state").state == STATE_UNKNOWN
+    assert hass.states.get("sensor.laundry_stage").state == STATE_UNKNOWN
+    assert hass.states.get("binary_sensor.laundry_running").state == STATE_UNKNOWN
+    assert entry.runtime_data.update_interval == timedelta(seconds=300)
 
 
 @pytest.mark.freeze_time("2026-11-23 09:00:00+00:00")
@@ -169,6 +214,7 @@ async def test_powered_off_washer_shows_its_last_report(
     assert hass.states.get("sensor.laundry_operation_state").state == "stopped"
     assert hass.states.get("binary_sensor.laundry_running").state == "off"
     assert hass.states.get("sensor.laundry_course").state == "standard"
+    assert hass.states.get("sensor.laundry_progress").state == "100"
     assert hass.states.get("sensor.laundry_detergent_level").state == "ok"
     # These can change, or were already stale, once the washer is off.
     assert hass.states.get("binary_sensor.laundry_door").state == STATE_UNKNOWN

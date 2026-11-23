@@ -66,6 +66,7 @@
         "name": "運転状態",
         "state": {
           "running": "運転中",
+          "paused": "一時停止",
           "standby": "待機中",
           "stopped": "停止"
         }
@@ -78,6 +79,8 @@
           "spinning": "脱水",
           "drying": "乾燥",
           "wrinkle_minimizing": "シワ抑え",
+          "calculating_drying_time": "乾燥時間計算中",
+          "adjusting_drying_time": "乾燥時間見直し中",
           "suspended": "一時停止",
           "finished": "終了",
           "standby": "待機中",
