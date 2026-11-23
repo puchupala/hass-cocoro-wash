@@ -35,6 +35,21 @@ are translated to English and Japanese.
 
 ## Installation
 
+Requires Home Assistant 2026.10 or newer.
+
+### Home Assistant Marketplace
+
+[![Open your Home Assistant instance and open a repository in the Marketplace.](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=puchupala&repository=hass-cocoro-wash&category=integration)
+
+1. Go to **Settings → Marketplace** and choose **Add from link**.
+2. Enter `puchupala/hass-cocoro-wash`.
+3. Install **Sharp COCORO WASH** and restart Home Assistant when asked.
+
+This integration is not in the default catalog, so it does not show up in the
+Marketplace search; it has to be added by its link.
+
+### Manual
+
 Copy `custom_components/cocoro_wash` into the `custom_components` folder of
 your Home Assistant configuration and restart Home Assistant.
 

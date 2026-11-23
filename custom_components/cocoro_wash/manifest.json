@@ -1,6 +1,7 @@
 {
   "domain": "cocoro_wash",
   "name": "Sharp COCORO WASH",
+  "categories": ["appliances_cleaning.laundry"],
   "codeowners": ["@puchupala"],
   "config_flow": true,
   "documentation": "https://github.com/puchupala/hass-cocoro-wash",
