@@ -1,0 +1,160 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "COCORO WASH にログイン",
+        "description": "COCORO WASH または COCORO HOME アプリで洗濯機を登録している COCORO ID（COCORO MEMBERS アカウント）を入力してください。",
+        "data": {
+          "email": "COCORO ID（メールアドレス）",
+          "password": "パスワード"
+        },
+        "data_description": {
+          "email": "COCORO MEMBERS へのログインに使うメールアドレスです。",
+          "password": "COCORO MEMBERS アカウントのパスワードです。"
+        }
+      },
+      "reauth_confirm": {
+        "title": "COCORO WASH に再ログイン",
+        "description": "{email} のパスワードが拒否されました。現在のパスワードを入力してください。",
+        "data": {
+          "password": "パスワード"
+        },
+        "data_description": {
+          "password": "COCORO MEMBERS アカウントのパスワードです。"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "COCORO ID またはパスワードが正しくありません。",
+      "cannot_connect": "COCORO WASH サービスに接続できませんでした。",
+      "login_failed": "COCORO MEMBERS のログインページでログインを完了できませんでした。追加のセキュリティ確認を求められている可能性があります。詳細はログを確認してください。",
+      "no_devices": "この COCORO ID には洗濯機が登録されていません。",
+      "unknown": "予期しないエラーが発生しました。詳細はログを確認してください。"
+    },
+    "abort": {
+      "already_configured": "この COCORO ID はすでに設定されています。",
+      "reauth_successful": "再認証に成功しました。"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ポーリング",
+        "description": "ポーリングのたびに洗濯機本体へ状態を問い合わせるため、間隔を短くすると洗濯機への通信が増えます。",
+        "data": {
+          "scan_interval_running": "運転中の間隔",
+          "scan_interval_idle": "待機中の間隔"
+        },
+        "data_description": {
+          "scan_interval_running": "いずれかの洗濯機が運転中のときのポーリング間隔（秒）。",
+          "scan_interval_idle": "どの洗濯機も運転していないときのポーリング間隔（秒）。"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "運転中"
+      },
+      "timer_reserved": {
+        "name": "予約"
+      }
+    },
+    "sensor": {
+      "operation_state": {
+        "name": "運転状態",
+        "state": {
+          "running": "運転中",
+          "standby": "待機中",
+          "stopped": "停止"
+        }
+      },
+      "stage": {
+        "name": "工程",
+        "state": {
+          "washing": "洗い",
+          "rinsing": "すすぎ",
+          "spinning": "脱水",
+          "drying": "乾燥",
+          "wrinkle_minimizing": "シワ抑え",
+          "suspended": "一時停止",
+          "finished": "終了",
+          "standby": "待機中",
+          "running": "運転中"
+        }
+      },
+      "course": {
+        "name": "コース",
+        "state": {
+          "standard": "標準コース",
+          "quick": "時短コース",
+          "wrinkle_reduction": "シワ抑えコース",
+          "my_course": "おうち流コース",
+          "softener_plus": "柔軟剤プラスコース",
+          "fragrance_plus": "香りプラスコース",
+          "hot_water_deep_wash": "温水極め洗いコース",
+          "home_cleaning": "ホームクリーニングコース",
+          "blanket": "毛布コース",
+          "bulky_blanket": "大物・毛布コース",
+          "tub_wash": "槽洗浄コース",
+          "tub_clean": "槽クリーンコース",
+          "deodorize": "消臭コース",
+          "sanitize_deodorize": "除菌・消臭コース",
+          "quick_prewash": "サッと予洗いコース",
+          "heavy_soil": "ガンコ汚れコース",
+          "wash_dry_80": "洗乾80分コース",
+          "towel_care": "タオルケアコース",
+          "wash_10_min": "10分洗濯コース",
+          "warm_air_wash": "温風プラス洗いコース",
+          "hanger_dry": "ハンガー乾燥コース",
+          "hanger_sanitize_dry": "ハンガー除菌・乾燥コース",
+          "hanger_deodorize_5_min": "ハンガー消臭コース（5分）",
+          "hanger_deodorize_10_min": "ハンガー消臭コース（10分）",
+          "hanger_deodorize_30_min": "ハンガー消臭コース（30分）",
+          "hanger_sanitize_deodorize_5_min": "ハンガー除菌・消臭コース（5分）",
+          "hanger_sanitize_deodorize_10_min": "ハンガー除菌・消臭コース（10分）",
+          "hanger_sanitize_deodorize_30_min": "ハンガー除菌・消臭コース（30分）",
+          "warm_soak_wash": "温つけおき洗いコース",
+          "delicates": "おしゃれ着コース",
+          "heavy_soak": "ガンコつけおきコース",
+          "thorough_rinse": "ていねいすすぎコース",
+          "downloaded": "ダウンロードコース"
+        }
+      },
+      "cycle_type": {
+        "name": "運転の種類",
+        "state": {
+          "wash_dry": "洗～乾",
+          "wash": "洗濯",
+          "dry": "乾燥"
+        }
+      },
+      "remaining_time": {
+        "name": "残り時間"
+      },
+      "progress": {
+        "name": "進行状況"
+      },
+      "completion_time": {
+        "name": "終了予定時刻"
+      },
+      "detergent_level": {
+        "name": "洗剤残量",
+        "state": {
+          "ok": "十分",
+          "low": "少ない",
+          "empty": "なし"
+        }
+      },
+      "softener_level": {
+        "name": "柔軟剤残量",
+        "state": {
+          "ok": "十分",
+          "low": "少ない",
+          "empty": "なし"
+        }
+      }
+    }
+  }
+}

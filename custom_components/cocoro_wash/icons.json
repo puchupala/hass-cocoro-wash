@@ -1,0 +1,49 @@
+{
+  "entity": {
+    "binary_sensor": {
+      "timer_reserved": {
+        "default": "mdi:timer-off-outline",
+        "state": {
+          "on": "mdi:timer-outline"
+        }
+      }
+    },
+    "sensor": {
+      "operation_state": {
+        "default": "mdi:washing-machine",
+        "state": {
+          "stopped": "mdi:washing-machine-off"
+        }
+      },
+      "stage": {
+        "default": "mdi:progress-clock"
+      },
+      "course": {
+        "default": "mdi:format-list-bulleted"
+      },
+      "cycle_type": {
+        "default": "mdi:tumble-dryer"
+      },
+      "progress": {
+        "default": "mdi:progress-check"
+      },
+      "completion_time": {
+        "default": "mdi:clock-end"
+      },
+      "detergent_level": {
+        "default": "mdi:bottle-tonic",
+        "state": {
+          "low": "mdi:bottle-tonic-outline",
+          "empty": "mdi:bottle-tonic-outline"
+        }
+      },
+      "softener_level": {
+        "default": "mdi:bottle-tonic",
+        "state": {
+          "low": "mdi:bottle-tonic-outline",
+          "empty": "mdi:bottle-tonic-outline"
+        }
+      }
+    }
+  }
+}
