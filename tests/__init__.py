@@ -1,0 +1,17 @@
+"""Tests for the Sharp COCORO WASH integration."""
+
+# Properties read from a real drum washer-dryer (ES-W114) while it was drying.
+DRYING_PROPERTIES: dict[str, str] = {
+    "0x88": "0x42",
+    "0x90": "0x42",
+    "0xB0": "0x42",
+    "0xD0": "0xA1",
+    "0xE2": "0x52",
+    "0xED": "0x0128",
+    "0xF0": "0x000000000B00036E3C0200070100000000000000000000000000004A50000101",
+    "0xF4": ("0x0000000203670000002000000000000E000000000000000000000000830000005F74" + "00" * 62),
+    "0xF9": "0x0A01FF000AFF0000",
+    "0xFC": "0x0207E5",
+}
+
+DEVICE_ID = "a" * 64

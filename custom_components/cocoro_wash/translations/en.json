@@ -1,0 +1,160 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Sign in to COCORO WASH",
+        "description": "Enter the COCORO ID (COCORO MEMBERS account) that your washer is registered to in the COCORO WASH or COCORO HOME app.",
+        "data": {
+          "email": "COCORO ID (email address)",
+          "password": "Password"
+        },
+        "data_description": {
+          "email": "The email address you use to sign in to COCORO MEMBERS.",
+          "password": "The password of your COCORO MEMBERS account."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in to COCORO WASH again",
+        "description": "The password for {email} was rejected. Enter the current password.",
+        "data": {
+          "password": "Password"
+        },
+        "data_description": {
+          "password": "The password of your COCORO MEMBERS account."
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "The COCORO ID or password is incorrect.",
+      "cannot_connect": "Could not reach the COCORO WASH service.",
+      "login_failed": "The COCORO MEMBERS login page did not let the sign-in complete. It may be asking for an extra security check; see the log for details.",
+      "no_devices": "No washer is registered to this COCORO ID.",
+      "unknown": "Unexpected error. See the log for details."
+    },
+    "abort": {
+      "already_configured": "This COCORO ID is already configured.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Polling",
+        "description": "Every poll asks the washer itself for its state, so short intervals keep it busy.",
+        "data": {
+          "scan_interval_running": "Interval while a cycle is running",
+          "scan_interval_idle": "Interval while the washer is idle"
+        },
+        "data_description": {
+          "scan_interval_running": "Seconds between polls while any washer is running.",
+          "scan_interval_idle": "Seconds between polls while no washer is running."
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "running": {
+        "name": "Running"
+      },
+      "timer_reserved": {
+        "name": "Timer reserved"
+      }
+    },
+    "sensor": {
+      "operation_state": {
+        "name": "Operation state",
+        "state": {
+          "running": "Running",
+          "standby": "Standby",
+          "stopped": "Stopped"
+        }
+      },
+      "stage": {
+        "name": "Stage",
+        "state": {
+          "washing": "Washing",
+          "rinsing": "Rinsing",
+          "spinning": "Spinning",
+          "drying": "Drying",
+          "wrinkle_minimizing": "Wrinkle minimizing",
+          "suspended": "Paused",
+          "finished": "Finished",
+          "standby": "Standby",
+          "running": "Running"
+        }
+      },
+      "course": {
+        "name": "Course",
+        "state": {
+          "standard": "Standard",
+          "quick": "Quick",
+          "wrinkle_reduction": "Wrinkle reduction",
+          "my_course": "My course (Ouchi-ryu)",
+          "softener_plus": "Softener plus",
+          "fragrance_plus": "Fragrance plus",
+          "hot_water_deep_wash": "Hot water deep wash",
+          "home_cleaning": "Home cleaning",
+          "blanket": "Blanket",
+          "bulky_blanket": "Bulky items and blankets",
+          "tub_wash": "Tub wash",
+          "tub_clean": "Tub clean",
+          "deodorize": "Deodorize",
+          "sanitize_deodorize": "Sanitize and deodorize",
+          "quick_prewash": "Quick prewash",
+          "heavy_soil": "Heavy soil",
+          "wash_dry_80": "80-minute wash and dry",
+          "towel_care": "Towel care",
+          "wash_10_min": "10-minute wash",
+          "warm_air_wash": "Warm air plus wash",
+          "hanger_dry": "Hanger dry",
+          "hanger_sanitize_dry": "Hanger sanitize and dry",
+          "hanger_deodorize_5_min": "Hanger deodorize (5 min)",
+          "hanger_deodorize_10_min": "Hanger deodorize (10 min)",
+          "hanger_deodorize_30_min": "Hanger deodorize (30 min)",
+          "hanger_sanitize_deodorize_5_min": "Hanger sanitize and deodorize (5 min)",
+          "hanger_sanitize_deodorize_10_min": "Hanger sanitize and deodorize (10 min)",
+          "hanger_sanitize_deodorize_30_min": "Hanger sanitize and deodorize (30 min)",
+          "warm_soak_wash": "Warm soak wash",
+          "delicates": "Delicates",
+          "heavy_soak": "Heavy soil soak",
+          "thorough_rinse": "Thorough rinse",
+          "downloaded": "Downloaded course"
+        }
+      },
+      "cycle_type": {
+        "name": "Cycle type",
+        "state": {
+          "wash_dry": "Wash and dry",
+          "wash": "Wash",
+          "dry": "Dry"
+        }
+      },
+      "remaining_time": {
+        "name": "Remaining time"
+      },
+      "progress": {
+        "name": "Progress"
+      },
+      "completion_time": {
+        "name": "Completion time"
+      },
+      "detergent_level": {
+        "name": "Detergent level",
+        "state": {
+          "ok": "OK",
+          "low": "Low",
+          "empty": "Empty"
+        }
+      },
+      "softener_level": {
+        "name": "Softener level",
+        "state": {
+          "ok": "OK",
+          "low": "Low",
+          "empty": "Empty"
+        }
+      }
+    }
+  }
+}

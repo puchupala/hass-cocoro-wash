@@ -1,0 +1,12 @@
+{
+  "domain": "cocoro_wash",
+  "name": "Sharp COCORO WASH",
+  "codeowners": ["@puchupala"],
+  "config_flow": true,
+  "documentation": "https://github.com/puchupala/hass-cocoro-wash",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/puchupala/hass-cocoro-wash/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
